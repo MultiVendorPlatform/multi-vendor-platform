@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - master  # Fixed spacing issue
+      - master 
 
 jobs:
   build:
