@@ -1,39 +1,35 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+// middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+
+// 1. Define protected routes
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/account(.*)',
+  '/settings(.*)',
+  '/api(.*)', // Protect all API routes by default
+]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { isSignedIn, sessionClaims } = await auth(); // Use await to get auth data
+  // 2. Public routes
+  const publicPaths = [
+    '/',
+    '/sign-in(.*)',
+    '/sign-up(.*)',
+    '/about',
+    '/contact',
+  ];
 
-  // Handle API user requests
-  if (req.nextUrl.pathname.startsWith("/api/user")) {
-    if (!isSignedIn) {
-      return NextResponse.json(
-        { message: "You are not authorized to access this resource" },
-        { status: 401 }
-      );
-    }
+  // 3. Skip auth for public routes
+  if (publicPaths.some(path => req.nextUrl.pathname.match(path))) {
+    return;
   }
 
-  // Handle API admin requests
-  if (req.nextUrl.pathname.startsWith("/api/admin")) {
-    if (sessionClaims?.metadata?.role !== "admin") {
-      return NextResponse.json(
-        { message: "You are not authorized to access this resource" },
-        { status: 401 }
-      );
-    }
+  // 4. Protect matched routes
+  if (isProtectedRoute(req)) {
+    await auth().protect(); // Add await here
   }
-
-  // Allow request to proceed if everything is valid
-  const response = NextResponse.next();
-  return response;
 });
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
-  ],
+  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
 };
