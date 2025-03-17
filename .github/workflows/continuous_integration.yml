@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install Dependencies
+        run: npm install  # Fixed incorrect 'uses:', replaced with 'run'
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Check TypeScript Errors
+        run: npm i -g typescript && tsc
+
+      - name: Check Lint Errors
+        run: npm run eslint
+
+      - name: Run Unit and Integration Tests
+        run: npm test
